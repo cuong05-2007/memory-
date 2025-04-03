@@ -37,6 +37,13 @@
     .comment-input { width: calc(100% - 90px); padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     .comment-btn { padding: 8px 12px; border: none; border-radius: 4px; background: #A52A2A; color: #fff; cursor: pointer; margin-left: 10px; }
     .comment-btn:hover { background: #8B4513; }
+    .actions { margin-top: 10px; }
+    .actions button { padding: 5px 10px; margin-right: 10px; border: none; border-radius: 4px; cursor: pointer; }
+    .edit-btn { background: #FFD700; color: #000; }
+    .delete-btn { background: #FF6347; color: #fff; }
+    .edit-form { display: none; margin-top: 10px; }
+    .edit-form input, .edit-form textarea { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    .edit-form button { padding: 8px 12px; background: #A52A2A; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
     footer { background-color: #8B4513; color: #fff; text-align: center; padding: 20px; margin-top: 30px; }
   </style>
 </head>
@@ -47,6 +54,8 @@
     <section id="memory-form">
       <h2>Đăng Kỷ Niệm</h2>
       <form id="postForm">
+        <label for="author">Tên người đăng:</label>
+        <input type="text" id="author" name="author" placeholder="Nhập tên của bạn" required>
         <label for="title">Tiêu đề:</label>
         <input type="text" id="title" name="title" placeholder="Nhập tiêu đề kỷ niệm" required>
         <label for="content">Nội dung:</label>
@@ -65,12 +74,13 @@
   <script>
     document.getElementById('postForm').addEventListener('submit', function(e) {
       e.preventDefault();
+      const author = document.getElementById('author').value;
       const title = document.getElementById('title').value;
       const content = document.getElementById('content').value;
       const mediaInput = document.getElementById('media');
       const file = mediaInput.files[0];
-      const memory = { title, content };
-      if(file) {
+      const memory = { author, title, content };
+      if (file) {
         const reader = new FileReader();
         reader.onload = function(event) {
           memory.media = event.target.result;
@@ -88,12 +98,14 @@
         this.reset();
       }
     });
+
     function saveMemory(memory) {
       let memories = JSON.parse(localStorage.getItem('memories')) || [];
       memories.push(memory);
       localStorage.setItem('memories', JSON.stringify(memories));
       displayMemories();
     }
+
     function displayMemories() {
       const memoryList = document.getElementById('memory-list');
       let memories = JSON.parse(localStorage.getItem('memories')) || [];
@@ -102,10 +114,10 @@
         let item = document.createElement('div');
         item.className = 'memory-item';
         let mediaContent = '';
-        if(memory.media && memory.mediaType) {
-          if(memory.mediaType.startsWith('image')) {
+        if (memory.media && memory.mediaType) {
+          if (memory.mediaType.startsWith('image')) {
             mediaContent = `<img src="${memory.media}" alt="Kỷ niệm">`;
-          } else if(memory.mediaType.startsWith('video')) {
+          } else if (memory.mediaType.startsWith('video')) {
             mediaContent = `<video controls><source src="${memory.media}" type="${memory.mediaType}">Trình duyệt không hỗ trợ video.</video>`;
           }
         }
@@ -119,35 +131,89 @@
         let commentsHTML = `
           <div class="comments">
             <h4>Bình luận:</h4>
-            <div class="comment-list">${memory.comments ? memory.comments.map(c => `<p>${c}</p>`).join('') : ''}</div>
-            <input type="text" placeholder="Viết bình luận..." class="comment-input" id="comment-input-${index}">
+            <div class="comment-list">${memory.comments ? memory.comments.map(c => `<p><strong>${c.author}:</strong> ${c.text}</p>`).join('') : ''}</div>
+            <input type="text" placeholder="Tên của bạn" id="comment-author-${index}" class="comment-input" required>
+            <input type="text" placeholder="Viết bình luận..." id="comment-text-${index}" class="comment-input" required>
             <button class="comment-btn" onclick="addComment(${index})">Bình luận</button>
           </div>
         `;
-        item.innerHTML = `<h3>${memory.title}</h3><p>${memory.content}</p>${mediaContent}${reactionHTML}${commentsHTML}`;
+        let actionsHTML = `
+          <div class="actions">
+            <button class="edit-btn" onclick="showEditForm(${index})">Chỉnh sửa</button>
+            <button class="delete-btn" onclick="deleteMemory(${index})">Xóa</button>
+          </div>
+          <div class="edit-form" id="edit-form-${index}">
+            <input type="text" id="edit-title-${index}" value="${memory.title}">
+            <textarea id="edit-content-${index}">${memory.content}</textarea>
+            <input type="file" id="edit-media-${index}" accept="image/*,video/*">
+            <button onclick="updateMemory(${index})">Cập nhật</button>
+          </div>
+        `;
+        item.innerHTML = `<h3>${memory.title}</h3><p>${memory.content}</p><p><em>Đăng bởi: ${memory.author}</em></p>${mediaContent}${reactionHTML}${commentsHTML}${actionsHTML}`;
         memoryList.appendChild(item);
       });
     }
+
     function addReaction(index, type) {
       let memories = JSON.parse(localStorage.getItem('memories')) || [];
-      if(!memories[index].reactions) { memories[index].reactions = { like: 0, love: 0, haha: 0 }; }
+      if (!memories[index].reactions) { memories[index].reactions = { like: 0, love: 0, haha: 0 }; }
       memories[index].reactions[type] = (memories[index].reactions[type] || 0) + 1;
       localStorage.setItem('memories', JSON.stringify(memories));
       displayMemories();
     }
+
     function addComment(index) {
-      const commentInput = document.getElementById(`comment-input-${index}`);
-      const commentText = commentInput.value.trim();
-      if(commentText) {
+      const authorInput = document.getElementById(`comment-author-${index}`);
+      const textInput = document.getElementById(`comment-text-${index}`);
+      const author = authorInput.value.trim();
+      const text = textInput.value.trim();
+      if (author && text) {
         let memories = JSON.parse(localStorage.getItem('memories')) || [];
-        if(!memories[index].comments) { memories[index].comments = []; }
-        memories[index].comments.push(commentText);
+        if (!memories[index].comments) { memories[index].comments = []; }
+        memories[index].comments.push({ author, text });
+        localStorage.setItem('memories', JSON.stringify(memories));
+        displayMemories();
+      } else {
+        alert('Vui lòng nhập cả tên và nội dung bình luận!');
+      }
+    }
+
+    function deleteMemory(index) {
+      let memories = JSON.parse(localStorage.getItem('memories')) || [];
+      memories.splice(index, 1);
+      localStorage.setItem('memories', JSON.stringify(memories));
+      displayMemories();
+    }
+
+    function showEditForm(index) {
+      const editForm = document.getElementById(`edit-form-${index}`);
+      editForm.style.display = 'block';
+    }
+
+    function updateMemory(index) {
+      const title = document.getElementById(`edit-title-${index}`).value;
+      const content = document.getElementById(`edit-content-${index}`).value;
+      const mediaInput = document.getElementById(`edit-media-${index}`);
+      const file = mediaInput.files[0];
+      let memories = JSON.parse(localStorage.getItem('memories')) || [];
+      memories[index].title = title;
+      memories[index].content = content;
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          memories[index].media = event.target.result;
+          memories[index].mediaType = file.type;
+          localStorage.setItem('memories', JSON.stringify(memories));
+          displayMemories();
+        };
+        reader.readAsDataURL(file);
+      } else {
         localStorage.setItem('memories', JSON.stringify(memories));
         displayMemories();
       }
     }
+
     document.addEventListener('DOMContentLoaded', displayMemories);
   </script>
 </body>
-  
 </html>
