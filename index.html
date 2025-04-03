@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kỷ Niệm Cấp 3 - Lưu Giữ Ký Ức</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #F5F5DC; color: #333; line-height: 1.6; }
+    header { background: linear-gradient(135deg, #A52A2A, #8B4513); color: #fff; padding: 25px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    header h1 { font-size: 2.5rem; letter-spacing: 1px; margin-bottom: 10px; }
+    header p { font-size: 1.1rem; font-style: italic; }
+    nav { background-color: #DEB887; border-bottom: 2px solid #D2691E; }
+    nav ul { list-style: none; display: flex; justify-content: center; padding: 15px 0; }
+    nav ul li { margin: 0 20px; }
+    nav ul li a { text-decoration: none; color: #8B4513; font-weight: bold; transition: color 0.3s ease; }
+    nav ul li a:hover { color: #A52A2A; }
+    main { max-width: 1200px; margin: 30px auto; padding: 20px; }
+    #memory-form { background: #FFF8DC; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; }
+    #memory-form h2 { margin-bottom: 20px; color: #A52A2A; }
+    #memory-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #8B4513; }
+    #memory-form input[type="text"], #memory-form textarea, #memory-form input[type="file"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+    #memory-form button { width: 100%; padding: 12px; border: none; border-radius: 6px; background: #A52A2A; color: #fff; font-size: 1.1rem; cursor: pointer; transition: background 0.3s ease; }
+    #memory-form button:hover { background: #8B4513; }
+    #memory-list { background: #FFF8DC; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    #memory-list h2 { margin-bottom: 20px; color: #A52A2A; }
+    .memory-item { border-left: 6px solid #A52A2A; padding: 15px; margin-bottom: 20px; border-radius: 4px; background: #F5F5DC; transition: transform 0.2s; }
+    .memory-item:hover { transform: translateY(-3px); }
+    .memory-item h3 { color: #8B4513; margin-bottom: 10px; }
+    .memory-item p { margin-bottom: 10px; color: #000; }
+    .memory-item img, .memory-item video { max-width: 100%; height: auto; margin-top: 10px; border-radius: 4px; }
+    .reactions { margin-top: 10px; }
+    .reaction { cursor: pointer; margin-right: 10px; font-size: 1.2rem; color: #A52A2A; }
+    .comments { margin-top: 10px; }
+    .comments h4 { margin-bottom: 8px; color: #8B4513; }
+    .comment-list p { background: #F5F5DC; padding: 5px; border-radius: 4px; margin-bottom: 5px; color: #000; }
+    .comment-input { width: calc(100% - 90px); padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .comment-btn { padding: 8px 12px; border: none; border-radius: 4px; background: #A52A2A; color: #fff; cursor: pointer; margin-left: 10px; }
+    .comment-btn:hover { background: #8B4513; }
+    footer { background-color: #8B4513; color: #fff; text-align: center; padding: 20px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kỷ Niệm Cấp 3</h1>
+    <p>Lưu Giữ Ký Ức</p>
+    <section id="memory-form">
+      <h2>Đăng Kỷ Niệm</h2>
+      <form id="postForm">
+        <label for="title">Tiêu đề:</label>
+        <input type="text" id="title" name="title" placeholder="Nhập tiêu đề kỷ niệm" required>
+        <label for="content">Nội dung:</label>
+        <textarea id="content" name="content" rows="4" placeholder="Chia sẻ kỷ niệm của bạn..." required></textarea>
+        <label for="media">Chọn hình ảnh/ video:</label>
+        <input type="file" id="media" name="media" accept="image/*,video/*">
+        <button type="submit">Lưu Kỷ Niệm</button>
+      </form>
+    </section>
+    <section id="memory-list">
+      <h2>Danh Sách Kỷ Niệm</h2>
+    </section>
+  </header>
+  <main></main>
+  <footer>Lớp 12A2 2024-2025 - Kỷ Niệm Cấp 3 - Lưu Giữ Ký Ức</footer>
+  <script>
+    document.getElementById('postForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const mediaInput = document.getElementById('media');
+      const file = mediaInput.files[0];
+      const memory = { title, content };
+      if(file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          memory.media = event.target.result;
+          memory.mediaType = file.type;
+          memory.reactions = { like: 0, love: 0, haha: 0 };
+          memory.comments = [];
+          saveMemory(memory);
+          document.getElementById('postForm').reset();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        memory.reactions = { like: 0, love: 0, haha: 0 };
+        memory.comments = [];
+        saveMemory(memory);
+        this.reset();
+      }
+    });
+    function saveMemory(memory) {
+      let memories = JSON.parse(localStorage.getItem('memories')) || [];
+      memories.push(memory);
+      localStorage.setItem('memories', JSON.stringify(memories));
+      displayMemories();
+    }
+    function displayMemories() {
+      const memoryList = document.getElementById('memory-list');
+      let memories = JSON.parse(localStorage.getItem('memories')) || [];
+      memoryList.innerHTML = '<h2>Danh Sách Kỷ Niệm</h2>';
+      memories.forEach((memory, index) => {
+        let item = document.createElement('div');
+        item.className = 'memory-item';
+        let mediaContent = '';
+        if(memory.media && memory.mediaType) {
+          if(memory.mediaType.startsWith('image')) {
+            mediaContent = `<img src="${memory.media}" alt="Kỷ niệm">`;
+          } else if(memory.mediaType.startsWith('video')) {
+            mediaContent = `<video controls><source src="${memory.media}" type="${memory.mediaType}">Trình duyệt không hỗ trợ video.</video>`;
+          }
+        }
+        let reactionHTML = `
+          <div class="reactions">
+            <span class="reaction" onclick="addReaction(${index}, 'like')">👍 <span class="count">${(memory.reactions && memory.reactions.like) || 0}</span></span>
+            <span class="reaction" onclick="addReaction(${index}, 'love')">❤️ <span class="count">${(memory.reactions && memory.reactions.love) || 0}</span></span>
+            <span class="reaction" onclick="addReaction(${index}, 'haha')">😂 <span class="count">${(memory.reactions && memory.reactions.haha) || 0}</span></span>
+          </div>
+        `;
+        let commentsHTML = `
+          <div class="comments">
+            <h4>Bình luận:</h4>
+            <div class="comment-list">${memory.comments ? memory.comments.map(c => `<p>${c}</p>`).join('') : ''}</div>
+            <input type="text" placeholder="Viết bình luận..." class="comment-input" id="comment-input-${index}">
+            <button class="comment-btn" onclick="addComment(${index})">Bình luận</button>
+          </div>
+        `;
+        item.innerHTML = `<h3>${memory.title}</h3><p>${memory.content}</p>${mediaContent}${reactionHTML}${commentsHTML}`;
+        memoryList.appendChild(item);
+      });
+    }
+    function addReaction(index, type) {
+      let memories = JSON.parse(localStorage.getItem('memories')) || [];
+      if(!memories[index].reactions) { memories[index].reactions = { like: 0, love: 0, haha: 0 }; }
+      memories[index].reactions[type] = (memories[index].reactions[type] || 0) + 1;
+      localStorage.setItem('memories', JSON.stringify(memories));
+      displayMemories();
+    }
+    function addComment(index) {
+      const commentInput = document.getElementById(`comment-input-${index}`);
+      const commentText = commentInput.value.trim();
+      if(commentText) {
+        let memories = JSON.parse(localStorage.getItem('memories')) || [];
+        if(!memories[index].comments) { memories[index].comments = []; }
+        memories[index].comments.push(commentText);
+        localStorage.setItem('memories', JSON.stringify(memories));
+        displayMemories();
+      }
+    }
+    document.addEventListener('DOMContentLoaded', displayMemories);
+  </script>
+</body>
+  
+</html>
